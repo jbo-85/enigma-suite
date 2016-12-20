@@ -1,108 +1,83 @@
-# Makefile for enigma-suite-0.76
+# Makefile for enigma-suite
 
 VPATH = .:tools
 
+CC:=gcc
+CFLAGS:=-Wall -W -O3 -c
+LD:=gcc
+LDFLAGS:=-fomit-frame-pointer -s
+LIBS:=-lm
+
 default: enigma SGT
 
+%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
 charmap.o: \
-compile charmap.c charmap.h
-	./compile charmap.c
+charmap.c charmap.h
 
 cipher.o: \
-compile cipher.c global.h charmap.h key.h cipher.h
-	./compile cipher.c
+cipher.c global.h charmap.h key.h cipher.h
 
 ciphertext.o: \
-compile ciphertext.c error.h ciphertext.h
-	./compile ciphertext.c
-
-compile: \
-warn-auto.sh conf-cc
-	( cat warn-auto.sh; \
-	echo exec "`head -1 conf-cc`" '-c $${1+"$$@"}' \
-	) > compile
-	chmod 755 compile
+ciphertext.c error.h ciphertext.h
 
 date.o: \
-compile date.c date.h
-	./compile date.c
+date.c date.h
 
 dict.o: \
-compile dict.c charmap.h error.h dict.h
-	./compile dict.c
+dict.c charmap.h error.h dict.h
 
 display.o: \
-compile display.c display.h
-	./compile display.c
+display.c display.h
 
 enigma.o: \
-compile enigma.c global.h charmap.h cipher.h ciphertext.h dict.h \
+enigma.c global.h charmap.h cipher.h ciphertext.h dict.h \
 display.h error.h hillclimb.h ic.h input.h key.h result.h \
 resume_in.h resume_out.h scan.h
-	./compile enigma.c
 
 enigma: \
-load enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
+enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
 display.o error.o hillclimb.o ic.o input.o key.o result.o \
 resume_in.o resume_out.o scan_int.o score.o stecker.o
-	./load enigma charmap.o cipher.o ciphertext.o date.o dict.o \
+	$(LD) $(LDFLAGS) -oenigma enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
 	display.o error.o hillclimb.o ic.o input.o key.o result.o \
-	resume_in.o resume_out.o scan_int.o score.o stecker.o -lm
+	resume_in.o resume_out.o scan_int.o score.o stecker.o $(LIBS)
 
 error.o: \
-compile error.c error.h date.h
-	./compile error.c
+error.c error.h date.h
 
 hillclimb.o: \
-compile hillclimb.c cipher.h dict.h error.h global.h key.h \
+hillclimb.c cipher.h dict.h error.h global.h key.h \
 result.h resume_out.h score.h stecker.h state.h hillclimb.h
-	./compile hillclimb.c
-	
+
 ic.o: \
-compile ic.c cipher.h global.h hillclimb.h key.h ic.h
-	./compile ic.c
+ic.c cipher.h global.h hillclimb.h key.h ic.h
 
 input.o: \
-compile input.c charmap.h error.h global.h key.h stecker.h input.h
-	./compile input.c
+input.c charmap.h error.h global.h key.h stecker.h input.h
 
 key.o: \
-compile key.c global.h key.h
-	./compile key.c
-
-load: \
-warn-auto.sh conf-ld
-	( cat warn-auto.sh; \
-	echo 'main="$$1"; shift'; \
-	echo exec "`head -1 conf-ld`" \
-	'-o "$$main" "$$main".o $${1+"$$@"}' \
-	) > load
-	chmod 755 load
+key.c global.h key.h
 
 result.o: \
-compile result.c charmap.h date.h error.h global.h key.h result.h
-	./compile result.c
+result.c charmap.h date.h error.h global.h key.h result.h
 
 resume_in.o: \
-compile resume_in.c error.h global.h input.h key.h resume_in.h \
+resume_in.c error.h global.h input.h key.h resume_in.h \
 scan.h stecker.h
-	./compile resume_in.c
 
 resume_out.o: \
-compile resume_out.c charmap.h global.h key.h state.h resume_out.h
-	./compile resume_out.c
+resume_out.c charmap.h global.h key.h state.h resume_out.h
 
 scan_int.o: \
-compile scan_int.c scan.h
-	./compile scan_int.c
+scan_int.c scan.h
 
 score.o: \
-compile score.c cipher.h key.h score.h
-	./compile score.c
+score.c cipher.h key.h score.h
 
 stecker.o: \
-compile stecker.c global.h key.h stecker.h
-	./compile stecker.c
+stecker.c global.h key.h stecker.h
 
 
 # =============
@@ -110,15 +85,13 @@ compile stecker.c global.h key.h stecker.h
 # =============
 
 tools/SGT: \
-tools/SGT.o load
-	./load tools/SGT -lm
+tools/SGT.o
+	$(LD) $(LDFLAGS) -otools/SGT tools/SGT.o $(LIBS)
 
 tools/SGT.o: \
-SGT.c compile
-	./compile $< -o $@
-
+SGT.c
 
 clean: FORCE
-	rm -f *.o  tools/*.o
+	rm -f *.o *.obj tools/*.o tools/*.obj
 
 FORCE:
