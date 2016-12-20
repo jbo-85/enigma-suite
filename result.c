@@ -9,6 +9,9 @@
 #include "key.h"
 #include "result.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
 
 extern int path_lookup[][26];
 

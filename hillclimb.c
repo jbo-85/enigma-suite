@@ -1,19 +1,20 @@
 #if (defined WIN32 || defined _WIN32 || defined __MINGW32__ || defined __CYGWIN__ || defined _MSC_VER)
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
+#include "global.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#ifndef WINDOWS
 #include <sys/time.h>
+#endif
 #include <signal.h>
 #include "cipher.h"
 #include "dict.h"
 #include "error.h"
-#include "global.h"
 #include "hillclimb.h"
 #include "key.h"
 #include "result.h"

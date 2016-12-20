@@ -2,84 +2,105 @@
 
 VPATH = .:tools
 
+ifeq ($(CC),icl)
+#Intel Compiler
+
+ifneq ($(arch),)
+arch_=/arch:$(arch)
+endif
+
+CFLAGS:=/O2 $(arch_) /Qipo
+LD:=icl
+LDFLAGS:=/O2 $(arch_) /Qipo
+LIBS:=
+OBJ=.obj
+else
+#GCC
+
+ifneq ($(arch),)
+arch_:=-march=$(arch)
+endif
+
 CC:=gcc
-CFLAGS:=-Wall -W -O3 -flto
+CFLAGS:=-Wall -W -O3 $(arch_) -flto
 LD:=gcc
-LDFLAGS:=-fomit-frame-pointer -O3 -flto -s
+LDFLAGS:=-fomit-frame-pointer -O3 $(arch_) -flto -s
 LIBS:=-lm
+OBJ=.o
+endif
 
 default: enigma SGT
 
-%.o : %.c
-	$(CC) -c $(CFLAGS) -c $< -o $@
+%$(OBJ) : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-charmap.o: \
+charmap$(OBJ): \
 charmap.c charmap.h
 
-cipher.o: \
+cipher$(OBJ): \
 cipher.c global.h charmap.h key.h cipher.h
 
-ciphertext.o: \
+ciphertext$(OBJ): \
 ciphertext.c error.h ciphertext.h
 
-date.o: \
+date$(OBJ): \
 date.c date.h
 
-dict.o: \
+dict$(OBJ): \
 dict.c charmap.h error.h dict.h
 
-display.o: \
+display$(OBJ): \
 display.c display.h
 
-enigma.o: \
+enigma$(OBJ): \
 enigma.c global.h charmap.h cipher.h ciphertext.h dict.h \
 display.h error.h getopt.h hillclimb.h ic.h input.h key.h result.h \
 resume_in.h resume_out.h scan.h
 
 enigma: \
-enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
-display.o error.o getopt.o hillclimb.o ic.o input.o key.o result.o \
-resume_in.o resume_out.o scan_int.o score.o stecker.o
-	$(LD) $(LDFLAGS) -oenigma enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
-	display.o error.o getopt.o hillclimb.o ic.o input.o key.o result.o \
-	resume_in.o resume_out.o scan_int.o score.o stecker.o $(LIBS)
+enigma$(OBJ) charmap$(OBJ) cipher$(OBJ) ciphertext$(OBJ) date$(OBJ) dict$(OBJ) \
+display$(OBJ) error$(OBJ) getopt$(OBJ) hillclimb$(OBJ) ic$(OBJ) input$(OBJ) key$(OBJ) result$(OBJ) \
+resume_in$(OBJ) resume_out$(OBJ) scan_int$(OBJ) score$(OBJ) stecker$(OBJ)
+	$(LD) $(LDFLAGS) -oenigma enigma$(OBJ) charmap$(OBJ) cipher$(OBJ) ciphertext$(OBJ) date$(OBJ) dict$(OBJ) \
+	display$(OBJ) error$(OBJ) getopt$(OBJ) hillclimb$(OBJ) ic$(OBJ) input$(OBJ) key$(OBJ) result$(OBJ) \
+	resume_in$(OBJ) resume_out$(OBJ) scan_int$(OBJ) score$(OBJ) stecker$(OBJ) $(LIBS)
 
-error.o: \
+error$(OBJ): \
 error.c error.h date.h
 
-getopt.o: \
+getopt$(OBJ): \
 getopt.c getopt.h
 
-hillclimb.o: \
+hillclimb$(OBJ): \
 hillclimb.c cipher.h dict.h error.h global.h key.h \
 result.h resume_out.h score.h stecker.h state.h hillclimb.h
 
-ic.o: \
+ic$(OBJ): \
 ic.c cipher.h global.h hillclimb.h key.h ic.h
 
-input.o: \
+input$(OBJ): \
 input.c charmap.h error.h global.h key.h stecker.h input.h
 
-key.o: \
+key$(OBJ): \
 key.c global.h key.h
 
-result.o: \
+result$(OBJ): \
 result.c charmap.h date.h error.h global.h key.h result.h
 
-resume_in.o: \
+resume_in$(OBJ): \
 resume_in.c error.h global.h input.h key.h resume_in.h \
 scan.h stecker.h
 
-resume_out.o: \
+resume_out$(OBJ): \
 resume_out.c charmap.h global.h key.h state.h resume_out.h
 
-scan_int.o: \
+scan_int$(OBJ): \
 scan_int.c scan.h
 
-score.o: \
+score$(OBJ): \
 score.c cipher.h key.h score.h
 
-stecker.o: \
+stecker$(OBJ): \
 stecker.c global.h key.h stecker.h
 
 
@@ -88,11 +109,11 @@ stecker.c global.h key.h stecker.h
 # =============
 
 tools/SGT: \
-tools/SGT.o
-	$(LD) $(LDFLAGS) -otools/SGT tools/SGT.o $(LIBS)
+SGT$(OBJ)
+	$(LD) $(LDFLAGS) -otools/SGT SGT$(OBJ) $(LIBS)
 
-tools/SGT.o: \
-SGT.c
+SGT$(OBJ): \
+tools/SGT.c
 
 clean: FORCE
 	rm -f *.o *.obj tools/*.o tools/*.obj
