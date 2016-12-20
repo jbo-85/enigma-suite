@@ -503,7 +503,13 @@ void en_deciph_stdin_ALL(FILE *file, const Key *key)
   int p2 = 0, p3 = 0;
 
 
+#ifndef WINDOWS
   mem = pagesize = sysconf(_SC_PAGESIZE);
+#endif
+#ifdef WINDOWS
+  mem = pagesize = 4096;
+#endif
+
   if ((buf = malloc(mem)) == NULL) {
     fputs("enigma: error: out of memory.\n", stderr);
     exit(EXIT_FAILURE);

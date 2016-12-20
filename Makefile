@@ -101,7 +101,7 @@ compile score.c cipher.h key.h score.h
 	./compile score.c
 
 stecker.o: \
-compile stecker.c key.h stecker.h
+compile stecker.c global.h key.h stecker.h
 	./compile stecker.c
 
 

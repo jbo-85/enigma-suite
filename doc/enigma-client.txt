@@ -26,13 +26,13 @@ OPTIONS
 
 
 IMPORTANT NOTE
-        enigma-client.py has to use the same log-ngram dictionaries as
+        enigma-client has to use the same log-ngram dictionaries as
         the server. ONLY use the official 00trigr.cur and 00bigr.cur
         dictionaries.
 
 
 SEE ALSO
-       enigma(1)
+        enigma(1)
 
 
 AUTHOR

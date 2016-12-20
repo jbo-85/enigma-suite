@@ -41,8 +41,10 @@ void print_plaintext(FILE *fp, const int *stbrett, const int *ciphertext, int le
   fputc('\n', fp);
 
   fflush(fp);
+#ifndef WINDOWS
   ofd = fileno(fp);
   fsync(ofd);
+#endif
 }
 
 void print_key(FILE *fp, const Key *key)
@@ -95,8 +97,10 @@ Message key: %c%c%c%c\n\n",
   }
 
   fflush(fp);
+#ifndef WINDOWS
   ofd = fileno(fp);
   fsync(ofd);
+#endif
 }
 
 

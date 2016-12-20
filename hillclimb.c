@@ -17,10 +17,16 @@
 #include "stecker.h"
 #include "state.h"
 
+#ifdef WINDOWS
+#include <windows.h>
+#endif
+
 
 extern int tridict[][26][26];
 extern int path_lookup[][26];
+#ifndef WINDOWS
 struct sigaction sigact;
+#endif
 volatile sig_atomic_t do_shutdown = 0;
 
 
@@ -58,6 +64,7 @@ void handle_signal(int signum)
   do_shutdown = 1;
 }
 
+#ifndef WINDOWS
 void install_sighandler(void)
 {
   int catchsig[3] = {SIGINT, SIGQUIT, SIGTERM};
@@ -68,6 +75,19 @@ void install_sighandler(void)
     if (sigaction(catchsig[i], &sigact, NULL) != 0)
       err_sigaction_fatal(catchsig[i]);
 }
+#endif
+
+#ifdef WINDOWS
+void install_sighandler(void)
+{
+  int catchsig[2] = {SIGINT, SIGTERM};
+  int i;
+
+  for (i = 0; i < 2; i++)
+    if (signal(catchsig[i], handle_signal) == SIG_ERR)
+      err_sigaction_fatal(catchsig[i]);
+}
+#endif
 
 
 void hillclimb( const Key *from, const Key *to, const Key *ckey_res, const Key *gkey_res,
@@ -96,13 +116,25 @@ void hillclimb( const Key *from, const Key *to, const Key *ckey_res, const Key *
   unsigned int seed;
 
 
+#ifndef WINDOWS
   gettimeofday(&tv, NULL);
   seed = (tv.tv_sec%1000)*1000000 + tv.tv_usec; 
   srandom(seed);
+#endif
+#ifdef WINDOWS
+  srand(time(NULL));
   lastsave = time(NULL);
+#endif
 
-  if (resume)
+  if (resume) {
+#ifdef WINDOWS
+    if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS) == 0)
+      fputs("enigma: warning: could not set process priority to idle\n", stderr);
+    if (SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_IDLE) == 0)
+      fputs("enigma: warning: could not set thread priority to idle\n", stderr);
+#endif
     hillclimb_log("enigma: working on range ...");
+  }
   
   if (act_on_sig) {
     state.from = from;

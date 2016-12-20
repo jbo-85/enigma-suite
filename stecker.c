@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "global.h"
 #include "key.h"
 #include "stecker.h"
 
@@ -40,7 +41,12 @@ void rand_var(int var[])
   int i;
   
   for (count = 25; count > 0; count--) {
+#ifndef WINDOWS
     i = random() % (count+1);
+#endif
+#ifdef WINDOWS
+    i = rand() % (count+1);
+#endif
     store = var[count];
     var[count] = var[i];
     var[i] = store;

@@ -1,30 +1,33 @@
 #!/usr/bin/env python
 
 
-import sys
-import os
-import shutil
-import time
-import warnings
-import socket
-import httplib
-import urllib2
-import xmlrpclib
-from signal import SIGTERM
+import sys, os, shutil, time, string
+import warnings, atexit
+import socket, httplib, xmlrpclib
+import win32net, pywintypes
+from win32com.shell import shellcon
+from getpass import getpass
+from winaux import *
+import killall
+import taskcntl
 
 
+USER = ''
+PASSWD = None
 CLIENT = None
-ARGS = ""
-RPC_URL = 'http://keyserver.bytereef.org:443'
+ARGS = ''
 
-PREFIX = os.environ['HOME']
-BASEDIR = '.enigma-client'
+PREFIX = ''
+BASEDIR = 'EnigmaClient'
 
 TIMEOUT = 20
-PROXYTIMEOUT = 120
+PROXYTIMEOUT = 180
+RPC_URL = 'http://keyserver.bytereef.org:443'
 
 RUNNING_CLIENT_CHECK = 0
-
+PASSWD_GENERATED = 0
+CREATETASKS = 0
+HIDDEN = 0
 
 BLURB = """
 
@@ -40,36 +43,9 @@ the system or have the permission of the owner.
 """
 
 
-FGSTART="""#!/bin/sh
+FGSTART="""%(CLIENT)s %(ARGS)s\n"""
 
-cd %(RUNDIR)s
-
-%(RUNDIR)s/%(CLIENT)s %(ARGS)s
-"""
-
-
-ECRUN="""#!/bin/sh
-
-exec </dev/null
-exec >/dev/null
-
-cd %(RUNDIR)s
-
-nohup %(RUNDIR)s/%(CLIENT)s %(ARGS)s 2>>logfile &
-"""
-
-
-ECBOOT="""#!/bin/sh
-
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
-
-exec </dev/null
-exec >/dev/null
-
-cd %(RUNDIR)s
-
-env - PATH=$PATH %(RUNDIR)s/%(CLIENT)s %(ARGS)s 2>>logfile
-"""
+ECRUN="""%(CLIENT)s %(ARGS)s 1>NUL 2>>logfile.txt\n"""
 
 
 class ProxiedTransport(xmlrpclib.Transport):
@@ -118,7 +94,7 @@ class ConnectTest:
         except socket.gaierror:
             return
 
-    def test_get_chunk_rpc(self, server):
+    def testGetChunkRpc(self, server):
         """Tests the connection to the XML-RPC server"""
         reply = (None,)
         try:
@@ -144,14 +120,14 @@ class ConnectTest:
             self.sock.close()
         self.sock = None
  
-    def filewrite(self, filename, string):
-        """Writes 'string' to filename."""
+    def filewrite(self, filename, s):
+        """Writes 's' to filename."""
         try:
             f = open(filename, 'w')
         except EnvironmentError:
             return 0
         try:
-            f.write(string)
+            f.write(s)
         except EnvironmentError:
             f.close()
             return 0
@@ -159,177 +135,123 @@ class ConnectTest:
         return 1
 
 
-def mesg(format, *args):
-    sys.stdout.write(format % args)
-    sys.stdout.flush()
-
-def raw_input_strip(string):
-    return raw_input(string).strip()
-
-def get_command_output(command):
-    child = os.popen(command)
-    data = child.read()
-    child.close()
-    return data
-
-
-def find_active_clients():
-
-    oldcwd = os.getcwd()
-    cmd = """ps ux | awk '(/enigma/ || /python/) && !/awk/ {print $2}'"""
-    candidates  = get_command_output(cmd).split()
-    candidates.remove(str(os.getpid()))
-
-
-    # /proc filesystem facilitates things.
-    for pid in candidates:
-
-        procdir = "/proc/" + pid + "/cwd"
-        try:
-            os.chdir(procdir)
-        except OSError:
-            continue
-        rundir = os.getcwd()
-        lockfile = ".eclient.lock"
-
-        if os.path.isfile(lockfile):
-
-            mesg("""
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ The installer found active clients. All clients @
-@ have to be stopped first.                       @
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-""")
-            # Check for /etc/inittab install:
-            if os.path.isfile("/etc/inittab"):
-                # Uncommented ecboot lines:
-                for line in open("/etc/inittab", "r"):
-                    if "ecboot" in line and not line.startswith("#"):
-                        mesg( "\nFound active ecboot line in /etc/inittab:\n\n%s\n"
-                              " ==> Comment out all ecboot lines, then do "
-                              "`telinit Q`.\n\n" % line )
-                        sys.exit(1)
-                # Lines are commented out but user probably forgot `telinit Q`:
-                for line in open("/etc/inittab", "r"):
-                    if "ecboot" in line and line.startswith("#"):
-                        mesg( "\nThis line in /etc/inittab is commented out, but the client is "
-                              "still running:\n\n%s\n"
-                              " ==> You have to do `telinit Q` to stop the client.\n\n"
-                              "If you are sure that the client has not been started by init,\n"
-                              "remove the line(s) from /etc/inittab to get rid of this warning."
-                              "\n\n" % line )
-                        sys.exit(1)
-
-            # Other installs:
-            answer = raw_input_strip("\nFound active client using %s. Stop it Y/N [Y]? " % rundir)
-            if answer and not answer[0] in "Yy":
-                mesg("\n    @@@ Installation aborted. You have to stop the active client first. @@@\n\n")
-                sys.exit(1)
-            os.kill(int(pid), SIGTERM)
-            mesg("\nwaiting for client to stop... ")
-            time.sleep(5)
-            mesg("done\n\n")
-
-    os.chdir(oldcwd)
-
-
-def guess_active_clients():
-
-    # Check for enigma first
-    cmd = """ps ux | awk '/enigma/ && !/awk/ {print $2}'"""
-    candidates  = get_command_output(cmd).split()
-
-    for i in range(len(candidates)):
-        candidates[i] = int(candidates[i])
-
-    if candidates != []:
-        mesg("""
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ The installer found processes that are probably active clients. @
-@ All clients have to be stopped first.                           @
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-""")
-
-    for pid in candidates:
-        try:
-            os.kill(pid, 0)
-        except OSError:
-            continue
-        procstr = get_command_output("ps p %d" % pid)
-        answer = raw_input_strip( "\nThis process looks like an active client:\n\n"
-                                  "%s \n"
-                                  "Stop process Y/N [Y]? " % procstr )
-        if not answer or answer[0] in "Yy":
-            try:
-                os.kill(pid, SIGTERM)
-            except OSError:
-                pass
-            mesg("\nwaiting for process to stop... ")
-            time.sleep(5)
-            mesg("done\n\n")
-
-
-    # Check for python processes:
-    cmd = """ps ux | awk '/python/ && !/awk/ {print $2}'"""
-    candidates  = get_command_output(cmd).split()
-    candidates.remove(str(os.getpid()))
-
-    for i in range(len(candidates)):
-        candidates[i] = int(candidates[i])
-
-    if candidates != []:
-        mesg("""
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ The installer found processes that _might_ be active clients. @
-@ All clients have to be stopped first.                         @
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-""")
-
-    for pid in candidates:
-        procstr = get_command_output("ps p %d" % pid)
-        answer = raw_input_strip( "\nThis process _might_ be an active client:\n\n"
-                                  "%s \n"
-                                  "Stop process Y/N [N]? " % procstr )
-        if answer and answer[0] in "Yy":
-            try:
-                os.kill(pid, SIGTERM)
-            except OSError:
-                pass
-            mesg("\nwaiting for process to stop... ")
-            time.sleep(5)
-            mesg("done\n")
-
-
 
 """ main """
+
+# Keep window open:
+atexit.register(exit_keep)
 
 eclient = ConnectTest()
 if hasattr(socket, 'setdefaulttimeout'):
     socket.setdefaulttimeout(TIMEOUT)
 
 
-# Do not run as root.
-if os.geteuid() == 0:
-    mesg("\n    @@@ Refusing to run as root. @@@\n\n")
-    sys.exit(1)
-
-
 # Legal blurb:
 mesg(BLURB)
 answer = raw_input_strip("\nI have read the license and I accept Terms of Use. Y/N [N]? ")
 if not answer or not answer[0] in "Yy":
-    mesg("\n    @@@ Installation aborted. @@@\n\n")
+    mesg("\n\n    @@@ Installation aborted. @@@\n\n")
     sys.exit(1)
 
 
-# If we have /proc, check for running clients now.
-if os.path.isdir("/proc"):
-    find_active_clients()
+# End running client processes:
+mesg("""
 
-guess_active_clients()
+#############################################################
+# All running clients have to be stopped before proceeding. #
+#############################################################
+
+""")
+
+mesg("Checking for running clients... ")
+
+if killall.haveProc('enigma-client') or killall.haveProc('enigma'):
+    mesg(" yes\n\n")
+    answer = raw_input_strip("Stop all running clients Y/N [Y]? ")
+    if not answer or answer[0] in "Yy":
+        killall.killAllProcName('enigma-client')
+        time.sleep(1)
+        killall.killAllProcName('enigma')
+    else:
+        mesg("\n\n    @@@ Installation aborted @@@\n\n")
+        sys.exit(1)
+else:
+    mesg(" no\n\n")
+
+
+
+# We need a user with a password for the task scheduler.
+mesg("""
+
+######################################################################
+# If you want to run the client automatically in the background, you #
+# need a user account with a password. It is recommended that you    #
+# create a limited account for the purpose of running the client.    #
+######################################################################
+
+""" )
+
+mesg("Checking for user enigma-client... ")
+# We already have enigma-client.
+if haveUser("enigma-client"):
+    USER = "enigma-client"
+    mesg("yes\n\n")
+    answer = raw_input_strip("Create a new random password for enigma-client Y/N [Y]? ")
+    if not answer or answer[0] in "Yy":
+        PASSWD = genPasswd()
+        PASSWD_GENERATED = 1
+        setPasswd("enigma-client", PASSWD)
+        disablePasswdExpiry("enigma-client")
+    else:
+        mesg("\nEnter the password twice. You will not see any output while typing.\n\n")
+        match = 0
+        while not match:
+            pw1 = getpass()
+            pw2 = getpass()
+            if pw1 == pw2:
+                match = 1
+                PASSWD = pw1
+            else:
+                mesg("\nThe passwords do not match. Try again.\n\n")
+
+else:
+    mesg("no\n\n")
+    # Creating enigma-client is recommended.
+    answer = raw_input_strip("\nCreate user enigma-client with a random password Y/N [Y]? ")
+    if not answer or answer[0] in "Yy":
+        USER = "enigma-client"
+        PASSWD = genPasswd()
+        PASSWD_GENERATED = 1
+        mesg("Creating user enigma-client... ")
+        if addUser(USER, PASSWD) != 0:
+            mesg("failure\n")
+            mesg("\n\n    @@@ failed to create user enigma-client. @@@\n\n")
+            sys.exit(1)
+        else:
+            disablePasswdExpiry("enigma-client")
+            mesg("success\n\n")
+    else:
+        answer = raw_input_strip("\nDo you have an existing account with a password? Y/N [N]? ")
+        USER = getCurUser()
+        if answer and answer[0] in "Yy":
+            response = raw_input_strip("\nEnter the user name: [%s]? " % USER)
+            if response != "":
+                USER = response
+            if not haveUser(USER):
+                mesg("\n\n    @@@ user %s does not exist. @@@\n\n", USER)   
+                sys.exit(1)
+            mesg("\nEnter the password twice. You will not see any output while typing.\n\n")
+            match = 0
+            while not match:
+                pw1 = getpass()
+                pw2 = getpass()
+                if pw1 == pw2:
+                    match = 1
+                    PASSWD = pw1
+                else:
+                    mesg("\nThe passwords do not match. Try again.\n\n")
+        else: 
+            USER = getCurUser()
 
 
 mesg("""
@@ -366,7 +288,7 @@ mesg("trying port 65521... ")
 eclient.connect("keyserver.bytereef.org", 65521)
 if eclient.sock is not None:
     eclient.close()
-    CLIENT = "enigma-client.py"
+    CLIENT = "enigma-client.exe"
     mesg("success\n\n")
 else:
     mesg("no connection\n");
@@ -386,8 +308,8 @@ if CLIENT == None:
 if CLIENT == None:
     mesg("trying direct connection to port 443... ")
     server = xmlrpclib.Server(RPC_URL)
-    if eclient.test_get_chunk_rpc(server) == 1:
-        CLIENT = "eclient-rpc.py"
+    if eclient.testGetChunkRpc(server) == 1:
+        CLIENT = "eclient-rpc.exe"
         mesg("success\n\n")
     else:
         mesg("no connection\n")
@@ -412,8 +334,8 @@ if CLIENT == None:
     p.set_proxy(proxy)
     server = xmlrpclib.Server(RPC_URL, transport=p)
     mesg("\ntrying port 443 via proxy at %s... " % proxy)
-    if eclient.test_get_chunk_rpc(server) == 1:
-        CLIENT = "eclient-rpc.py"
+    if eclient.testGetChunkRpc(server) == 1:
+        CLIENT = "eclient-rpc.exe"
         ARGS = "-p " + proxy + " "
         mesg("success\n\n")
     else:
@@ -446,16 +368,23 @@ while 1:
     mesg("\n    @@@ Invalid response, try again. @@@\n\n")
 
 
+# Determine suitable PREFIX:
+PREFIX = getInstallPrefix(shellcon.CSIDL_PROGRAM_FILES)
+if not haveWritePerm(PREFIX):
+    PREFIX = getInstallPrefix(shellcon.CSIDL_PERSONAL, USER)
+PREFIX += '\\M4Project'
+
+
 # Example of run directory structure:
 CORES = response
 if CORES == 1:
     mesg( "\nThe installer will create this run directory: %s\n" \
-                         % (PREFIX + "/" + BASEDIR) )
+                         % (PREFIX + "\\" + BASEDIR) )
 else:
     mesg("\nThe installer will create these run directories: \n\n")
-    mesg("%s\n" % (PREFIX + "/" + BASEDIR))
+    mesg("%s\n" % (PREFIX + "\\" + BASEDIR))
     for i in range(1, CORES):
-        mesg("%s\n" % (PREFIX + "/" + BASEDIR + str(i+1)))
+        mesg("%s\n" % (PREFIX + "\\" + BASEDIR + str(i+1)))
 
 
 # Allow choice of prefix for the run directory.
@@ -490,6 +419,35 @@ PREFIX = os.path.normpath(PREFIX)
 BASEDIR = os.path.normpath(BASEDIR)
 
 
+mesg("""
+
+#######################################################################
+# The installer can create and run the background task automatically. #
+#######################################################################
+
+""")
+
+
+answer = raw_input_strip("Create it Y/N [Y]? ")
+if not answer or answer[0] in "Yy":
+    
+    CREATETASKS = 1
+    if getCurUser() == USER:
+        HIDDEN = 1
+    
+    d = {
+          'TASKNAME'  : '',
+          'CREATOR'   : USER,
+          'LOGIN'     : USER,
+          'PASSWD'    : PASSWD,
+          'APPNAME'   : '',
+          'SETCWD'    : '',
+          'MAXRUNTIME': -1,
+          'COMMENT'   : '',
+          'HIDDEN'    : HIDDEN
+        }
+
+
 # Do you really want all of this? :)
 mesg("""
 
@@ -499,146 +457,171 @@ mesg("""
 
 """)
 
-mesg("Client:\t%s\n" % CLIENT)
+mesg("User:     %s\n" % USER)
+if PASSWD_GENERATED:
+    mesg("Password: %s\n" % PASSWD)
+mesg("Client:   %s\n" % CLIENT)
 
 if CORES == 1:
     mesg( "\nThe installer will create/use this run directory: %s\n" \
-                         % (PREFIX + "/" + BASEDIR) )
+                         % (PREFIX + "\\" + BASEDIR) )
 else:
     mesg("\nThe installer will create/use these run directories: \n\n")
-    mesg("%s\n" % (PREFIX + "/" + BASEDIR))
+    mesg("%s\n" % (PREFIX + "\\" + BASEDIR))
     for i in range(1, CORES):
-        mesg("%s\n" % (PREFIX + "/" + BASEDIR + str(i+1)))
+        mesg("%s\n" % (PREFIX + "\\" + BASEDIR + str(i+1)))
+
+if CREATETASKS:
+    mesg("\nThe installer will create and run the background task(s).\n\n")
+    
 
 answer = raw_input_strip("\nAccept Y/N [N]? ")
 if not answer or not answer[0] in "Yy":
-    mesg("\n    @@@ Installation aborted. @@@\n\n")
+    mesg("\n\n    @@@ Installation aborted. @@@\n\n")
     sys.exit(1)
 
+mesg("\n\n")
 
 # Put the command line together.
-if CLIENT == "enigma-client.py":
+if CLIENT == "enigma-client.exe":
     ARGS = "keyserver.bytereef.org 65521"
-elif CLIENT == "eclient-rpc.py":
+elif CLIENT == "eclient-rpc.exe":
     ARGS = ARGS + RPC_URL
 
 
 # Create first run directory.
-RUNDIR = PREFIX + "/" + BASEDIR
+RUNDIR = PREFIX + "\\" + BASEDIR
 if not os.path.exists(RUNDIR):
     os.makedirs(RUNDIR)
 
 # If there are files from a previous installation, remove them.
-for filename in ( "enigma", "enigma-client.py", "eclient-rpc.py", "ecrun",
-                  "ecboot", "fgstart" ):
+for filename in ( "enigma.exe", "enigma-client.exe", "eclient-rpc.exe",
+                  "ecrunXP.bat", "fgstart.bat" ):
     try:
-        os.remove(RUNDIR + "/" + filename)
+        f = RUNDIR + "\\" + filename
+        if os.path.exists(f):
+            os.remove(f)
     except OSError:
-        pass
+        mesg("""
+
+    @@@ Could not remove:                                    @@@
+
+        %s
+        
+    @@@ Check if old clients are still using this directory. @@@
+
+        ==>  Ctrl-Alt-Del  ==> Task Manager
+
+""", f)
+        sys.exit(1)
+
 
 # Copy the new files.
-shutil.copy("../enigma", RUNDIR)
+shutil.copy("enigma.exe", RUNDIR)
+shutil.copy("library.zip", RUNDIR)
 shutil.copy(CLIENT, RUNDIR)
 
-filename = RUNDIR + "/" + "fgstart"
+filename = RUNDIR + "\\" + "fgstart.bat"
 s = FGSTART % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
 eclient.filewrite(filename, s)
-os.chmod(filename, 0755)
 
-filename = RUNDIR + "/" + "ecrun"
+filename = RUNDIR + "\\" + "ecrunXP.bat"
 s = ECRUN % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
 eclient.filewrite(filename, s)
-os.chmod(filename, 0755)
 
-filename = RUNDIR + "/" + "ecboot"
-s = ECBOOT % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
-eclient.filewrite(filename, s)
-os.chmod(filename, 0755)
+
+# Make sure that USER has write permissions.
+oldcwd = os.getcwd()
+os.chdir(PREFIX)
+addFullPermRec(BASEDIR, USER)
+os.chdir(oldcwd)
+    
+
+# Create the task:
+if CREATETASKS:
+    
+    d['TASKNAME'] = 'ecrunXP'
+    d['APPNAME'] = quote(RUNDIR + '\\' + 'ecrunXP.bat')
+    d['SETCWD'] = quote(RUNDIR)
+    d['COMMENT'] = "Enigma Client 1"
+
+    try:
+        taskcntl.newTask(d, 1)
+        time.sleep(1)
+    except pywintypes.com_error:
+        mesg("""
+    @@@ Warning: Could not create task. You might have entered a   @@@
+    @@@          wrong user/password combination.                  @@@
+
+        """)
+
 
 
 # Create and populate additional run directories as needed.
 for i in range(1, CORES):
 
     # Create additional run directory.
-    RUNDIR = PREFIX + "/" + BASEDIR + str(i+1)
+    CBASEDIR = BASEDIR + str(i+1)
+    RUNDIR = PREFIX + "\\" + CBASEDIR
     if not os.path.exists(RUNDIR):
         os.makedirs(RUNDIR)
 
     # If there are files from a previous installation, remove them.
-    for filename in ( "enigma", "enigma-client.py", "eclient-rpc.py", "ecrun",
-                      "ecboot", "fgstart" ):
+    for filename in ( "enigma.exe", "enigma-client.exe", "eclient-rpc.exe",
+                      "ecrunXP.bat", "fgstart.bat" ):
         try:
-            os.remove(RUNDIR + "/" + filename)
+            f = RUNDIR + "\\" + filename
+            if os.path.exists(f):
+                os.remove(f)
         except OSError:
-            pass
+            mesg("   @@@ Error: could not remove %s @@@\n\n", f)
+            mesg("   @@@ Check if old clients are still using this directory. @@@\n")
+            mesg("\n\n   ==>  Ctrl-Alt-Del  ==> Task Manager\n")
+            sys.exit(1)
 
     # Copy the new files.
-    shutil.copy("../enigma", RUNDIR)
+    shutil.copy("enigma.exe", RUNDIR)
+    shutil.copy("library.zip", RUNDIR)
     shutil.copy(CLIENT, RUNDIR)
 
-    filename = RUNDIR + "/" + "fgstart"
+    filename = RUNDIR + "\\" + "fgstart.bat"
     s = FGSTART % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
     eclient.filewrite(filename, s)
-    os.chmod(filename, 0755)
 
-    filename = RUNDIR + "/" + "ecrun"
+    filename = RUNDIR + "\\" + "ecrunXP.bat"
     s = ECRUN % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
     eclient.filewrite(filename, s)
-    os.chmod(filename, 0755)
 
-    filename = RUNDIR + "/" + "ecboot"
-    s = ECBOOT % {"RUNDIR": RUNDIR, "CLIENT": CLIENT, "ARGS": ARGS}
-    eclient.filewrite(filename, s)
-    os.chmod(filename, 0755)
+    # Make sure that USER has write permissions.
+    oldcwd = os.getcwd()
+    os.chdir(PREFIX)
+    addFullPermRec(CBASEDIR, USER)
+    os.chdir(oldcwd)
+
+    # Create the task:
+    if CREATETASKS:
+    
+        d['TASKNAME'] = 'ecrunXP' + str(i+1)
+        d['APPNAME'] = quote(RUNDIR + '\\' + 'ecrunXP.bat')
+        d['SETCWD'] = quote(RUNDIR)
+        d['COMMENT'] = "Enigma Client %s" % str(i+1) 
+
+        try:
+            taskcntl.newTask(d, 1)
+            time.sleep(1)
+        except pywintypes.com_error:
+            mesg("""
+        @@@ Warning: Could not create task. You might have entered a   @@@
+        @@@          wrong user/password combination.                  @@@
+
+            """)
+
 
 
 mesg("\n\n    $$$ Created run directories. $$$\n\n")
+if CREATETASKS:
+    mesg("    $$$ Started client(s)        $$$\n\n")
 
-
-# How many cores?
-mesg("""
-######################################################
-# If you want to run the client automatically in the #
-# background (recommended), you have two options.    #
-######################################################
-
-""")
-
-
-# /etc/inittab
-mesg("Option 1:\n")
-mesg("=========\n\n")
-mesg("# Add this to /etc/inittab:\n\n")
-
-# First directory
-FULLPATH = PREFIX + "/" + BASEDIR + "/" + "ecboot"
-mesg("EC:2345:respawn:/bin/su - %s -c %s\n", os.environ['USER'], FULLPATH)
-
-# Additional directories
-for i in range(1, CORES):
-
-    FULLPATH = PREFIX + "/" + BASEDIR + str(i+1) + "/" + "ecboot"
-    mesg( "EC%s:2345:respawn:/bin/su - %s -c %s\n", str(i+1),
-          os.environ['USER'], FULLPATH )
-
-
-# crontab
-mesg("\n\nOption 2:\n")
-mesg("=========\n\n")
-mesg("# Attention: The crontab syntax is for the Vixie cron.\n")
-mesg("# Add this to your crontab (crontab -e):\n\n")
-
-# First directory
-FULLPATH = PREFIX + "/" + BASEDIR + "/" + "ecrun"
-mesg("@reboot %s\n", FULLPATH)
-
-# Additional directories
-for i in range(1, CORES):
-
-    FULLPATH = PREFIX + "/" + BASEDIR + str(i+1) + "/" +  "ecrun"
-    mesg("@reboot %s\n", FULLPATH)
-
-mesg("\n\n")
 
 
 # Missing pyexpat.so warning:

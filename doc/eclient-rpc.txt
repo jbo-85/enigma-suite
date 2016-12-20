@@ -34,7 +34,7 @@ IMPORTANT NOTE
 
 
 SEE ALSO
-       enigma(1)
+        enigma(1)
 
 
 AUTHOR

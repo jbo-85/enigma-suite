@@ -107,8 +107,10 @@ void print_state(FILE *fp, const State *state)
 
 
   fflush(fp);
+#ifndef WINDOWS
   ofd = fileno(fp);
   fsync(ofd);
+#endif
 }
 
 

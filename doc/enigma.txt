@@ -118,7 +118,7 @@ SEARCH SPACE OPTIONS
 
         -a   All settings where the slow wheel moves are tested.
 
-
+       
 COMMON OPTIONS
 
         -f keystring  Search from (including) <keystring>.

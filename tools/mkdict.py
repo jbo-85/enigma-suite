@@ -38,7 +38,9 @@ def multiple_replace(text, subdict):
 
 """main"""
 
-locale.setlocale(locale.LC_ALL, LOCALE)
+if os.name == 'posix':
+    locale.setlocale(locale.LC_ALL, LOCALE)
+
 subdict = {
    "ä"  : "ae",
    "ö"  : "oe",
@@ -134,10 +136,11 @@ if good_turing:
     """ SGT calculates gt-smoothed probabilities
         of occurrences of observed frequencies
     """
-    command = "PATH=$PATH:"+SGTPATH+" SGT < "+infile+" > "+outfile
+    command = "SGT.exe < "+infile+" > "+outfile
     retval = os.system(command) >> 8
     if retval != 0:
-        print "mkdict.py: error: SGT failed, try to set SGTPATH"
+        print "mkdict.py: error: SGT.exe failed, make sure that \
+               mkdict.py and SGT.exe are in the same directory."
         sys.exit(1)
 
     """replace observed frequencies by smoothed probabilities"""

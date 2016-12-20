@@ -1,6 +1,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#define WINDOWS 
+
 #define H 0
 #define M3 1
 #define M4 2

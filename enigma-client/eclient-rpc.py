@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import fcntl
 import os
-import popen2
 import signal
 import sys
+import win32process, win32api
 import getopt
 import re
 import time
@@ -12,9 +11,9 @@ import socket
 import httplib
 import urllib2
 import xmlrpclib
+import plock
 
 
-CHLD_PID=0
 LOCKFILE=".eclient.lock"
 CRLF="\r\n"
 TRIDICT="http://www.bytereef.org/dict/00trigr.cur"
@@ -62,7 +61,7 @@ class EclientRPC:
                     break
 
     def filewrite(self, filename, string):
-        """Writes 'string' to file."""
+        """Writes 'string' to filename."""
         try:
             f = open(filename, 'w')
         except EnvironmentError:
@@ -179,21 +178,6 @@ class EclientRPC:
             else: # SUCCESS
                 done = 1
 
-    def lock(self, file, flags):
-        fcntl.flock(file.fileno(), flags)
-
-    def cleanup(self, signum, frame):
-        try:
-            os.kill(CHLD_PID, signal.SIGTERM);
-        except OSError:
-            pass
-        sys.exit(111)
-
-    def install_sighandlers(self):
-        signal.signal(signal.SIGTERM, self.cleanup)
-        signal.signal(signal.SIGINT, self.cleanup)
-        signal.signal(signal.SIGQUIT, self.cleanup)
-
     def log(self, mesg):
         date = time.strftime("%Y-%m-%d %H:%M:%S")
         sys.stderr.write("%s  eclient-rpc: %s\n" % (date, mesg))
@@ -204,18 +188,18 @@ class EclientRPC:
 eclient = EclientRPC()
 
 proxy = None
-resultfile = '/dev/null'
+resultfile = 'NUL'
 optlist = getopt.getopt(sys.argv[1:], "rp:")
 for L in optlist[0]:
     if L[0] == "-r":
-        resultfile = 'results'
+        resultfile = 'results.txt'
     if L[0] == "-p":
         proxy = L[1]
 if len(optlist[1]) != 1:
     eclient.usage()
 rpc_url = optlist[1][0]
 
-cmdseq = ('./enigma', '-R', '-o', resultfile, '00trigr.cur', '00bigr.cur', '00ciphertext')
+cmdline = ''.join(('enigma.exe -R -o ', resultfile, ' 00trigr.cur 00bigr.cur 00ciphertext > NUL'))
 
 if proxy:
     if hasattr(socket, 'setdefaulttimeout'):
@@ -234,8 +218,8 @@ if port >= 1024:
     eclient.log("aborting: use enigma-client for ports greater than 1023")
     sys.exit(1)
 
-if not os.path.isfile('enigma'):
-    eclient.log("error: could not find enigma")
+if not os.path.isfile('enigma.exe'):
+    eclient.log("error: could not find enigma.exe")
     sys.exit(1)
 
 if not os.path.isfile('00trigr.cur'):
@@ -251,20 +235,24 @@ if not os.path.isfile('00bigr.cur'):
 
 lockfile = open(LOCKFILE, "a")
 try:
-    eclient.lock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    plock.lock(lockfile, plock.LOCK_EX | plock.LOCK_NB)
 except IOError:
     eclient.log("error: another_enigma-client_process_is_already_using_this_directory")
     sys.exit(1)
 
 
-eclient.install_sighandlers()
-os.nice(19)
+win32process.SetPriorityClass(
+   win32process.GetCurrentProcess(),
+   win32process.IDLE_PRIORITY_CLASS
+)
+win32process.SetThreadPriority(
+   win32api.GetCurrentThread(),
+   win32process.THREAD_PRIORITY_IDLE
+)
 
 
 while 1:
-    proc = popen2.Popen3(cmdseq)
-    CHLD_PID = proc.pid
-    retval = proc.wait() >> 8
+    retval = os.system(cmdline)
     if retval == 0:
         eclient.log("submitting results ...")
         eclient.submit_chunk(server)
