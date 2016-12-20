@@ -1,3 +1,8 @@
+#if (defined WIN32 || defined _WIN32 || defined __MINGW32__ || defined __CYGWIN__ || defined _MSC_VER)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -16,11 +21,6 @@
 #include "score.h"
 #include "stecker.h"
 #include "state.h"
-
-#ifdef WINDOWS
-#include <windows.h>
-#endif
-
 
 extern int tridict[][26][26];
 extern int path_lookup[][26];

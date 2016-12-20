@@ -1,7 +1,9 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#if (defined WIN32 || defined _WIN32 || defined __MINGW32__ || defined __CYGWIN__ || defined _MSC_VER)
 #define WINDOWS 
+#endif
 
 #define H 0
 #define M3 1
