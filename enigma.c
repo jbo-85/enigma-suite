@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
+#include "getopt.h"
 #include <limits.h>
 #include "charmap.h"
 #include "cipher.h"
