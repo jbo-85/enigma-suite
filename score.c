@@ -388,81 +388,82 @@ int biscore(const int *stbrett, const int *ciphertext, int len)
     c2 = stbrett[ciphertext[i]];
     c2 = path_lookup[i][c2];
     c2 = stbrett[c2];
-    s0 += bidict[c1][c2];
 
     c3 = stbrett[ciphertext[i+1]];
     c3 = path_lookup[i+1][c3];
     c3 = stbrett[c3];
-    s1 += bidict[c2][c3];
 
     c4 = stbrett[ciphertext[i+2]];
     c4 = path_lookup[i+2][c4];
     c4 = stbrett[c4];
-    s2 += bidict[c3][c4];
 
     c5 = stbrett[ciphertext[i+3]];
     c5 = path_lookup[i+3][c5];
     c5 = stbrett[c5];
-    s3 += bidict[c4][c5];
 
     c6 = stbrett[ciphertext[i+4]];
     c6 = path_lookup[i+4][c6];
     c6 = stbrett[c6];
-    s0 += bidict[c5][c6];
 
     c7 = stbrett[ciphertext[i+5]];
     c7 = path_lookup[i+5][c7];
     c7 = stbrett[c7];
-    s1 += bidict[c6][c7];
 
     c8 = stbrett[ciphertext[i+6]];
     c8 = path_lookup[i+6][c8];
     c8 = stbrett[c8];
-    s2 += bidict[c7][c8];
 
     c9 = stbrett[ciphertext[i+7]];
     c9 = path_lookup[i+7][c9];
     c9 = stbrett[c9];
-    s3 += bidict[c8][c9];
 
     c10 = stbrett[ciphertext[i+8]];
     c10 = path_lookup[i+8][c10];
     c10 = stbrett[c10];
-    s0 += bidict[c9][c10];
 
     c11 = stbrett[ciphertext[i+9]];
     c11 = path_lookup[i+9][c11];
     c11 = stbrett[c11];
-    s1 += bidict[c10][c11];
 
     c12 = stbrett[ciphertext[i+10]];
     c12 = path_lookup[i+10][c12];
     c12 = stbrett[c12];
-    s2 += bidict[c11][c12];
 
     c13 = stbrett[ciphertext[i+11]];
     c13 = path_lookup[i+11][c13];
     c13 = stbrett[c13];
-    s3 += bidict[c12][c13];
 
     c14 = stbrett[ciphertext[i+12]];
     c14 = path_lookup[i+12][c14];
     c14 = stbrett[c14];
-    s0 += bidict[c13][c14];
 
     c15 = stbrett[ciphertext[i+13]];
     c15 = path_lookup[i+13][c15];
     c15 = stbrett[c15];
-    s1 += bidict[c14][c15];
 
     c16 = stbrett[ciphertext[i+14]];
     c16 = path_lookup[i+14][c16];
     c16 = stbrett[c16];
-    s2 += bidict[c15][c16];
 
     c17 = stbrett[ciphertext[i+15]];
     c17 = path_lookup[i+15][c17];
     c17 = stbrett[c17];
+
+    s0 += bidict[c1][c2];
+    s1 += bidict[c2][c3];
+    s2 += bidict[c3][c4];
+    s3 += bidict[c4][c5];
+    s0 += bidict[c5][c6];
+    s1 += bidict[c6][c7];
+    s2 += bidict[c7][c8];
+    s3 += bidict[c8][c9];
+    s0 += bidict[c9][c10];
+    s1 += bidict[c10][c11];
+    s2 += bidict[c11][c12];
+    s3 += bidict[c12][c13];
+    s0 += bidict[c13][c14];
+    s1 += bidict[c14][c15];
+    s2 += bidict[c15][c16];
     s3 += bidict[c16][c17];
 
     c1 = c17;
@@ -471,21 +472,22 @@ int biscore(const int *stbrett, const int *ciphertext, int len)
     c2 = stbrett[ciphertext[i]];
     c2 = path_lookup[i][c2];
     c2 = stbrett[c2];
-    s0 += bidict[c1][c2];
 
     c3 = stbrett[ciphertext[i+1]];
     c3 = path_lookup[i+1][c3];
     c3 = stbrett[c3];
-    s1 += bidict[c2][c3];
 
     c4 = stbrett[ciphertext[i+2]];
     c4 = path_lookup[i+2][c4];
     c4 = stbrett[c4];
-    s2 += bidict[c3][c4];
 
     c5 = stbrett[ciphertext[i+3]];
     c5 = path_lookup[i+3][c5];
     c5 = stbrett[c5];
+
+    s0 += bidict[c1][c2];
+    s1 += bidict[c2][c3];
+    s2 += bidict[c3][c4];
     s3 += bidict[c4][c5];
 
     c1 = c5;
@@ -524,81 +526,82 @@ int triscore(const int *stbrett, const int *ciphertext, int len)
     c3 = stbrett[ciphertext[i]];
     c3 = path_lookup[i][c3];
     c3 = stbrett[c3];
-    s0 += tridict[c1][c2][c3];
 
     c4 = stbrett[ciphertext[i+1]];
     c4 = path_lookup[i+1][c4];
     c4 = stbrett[c4];
-    s1 += tridict[c2][c3][c4];
 
     c5 = stbrett[ciphertext[i+2]];
     c5 = path_lookup[i+2][c5];
     c5 = stbrett[c5];
-    s2 += tridict[c3][c4][c5];
 
     c6 = stbrett[ciphertext[i+3]];
     c6 = path_lookup[i+3][c6];
     c6 = stbrett[c6];
-    s3 += tridict[c4][c5][c6];
 
     c7 = stbrett[ciphertext[i+4]];
     c7 = path_lookup[i+4][c7];
     c7 = stbrett[c7];
-    s0 += tridict[c5][c6][c7];
 
     c8 = stbrett[ciphertext[i+5]];
     c8 = path_lookup[i+5][c8];
     c8 = stbrett[c8];
-    s1 += tridict[c6][c7][c8];
 
     c9 = stbrett[ciphertext[i+6]];
     c9 = path_lookup[i+6][c9];
     c9 = stbrett[c9];
-    s2 += tridict[c7][c8][c9];
 
     c10 = stbrett[ciphertext[i+7]];
     c10 = path_lookup[i+7][c10];
     c10 = stbrett[c10];
-    s3 += tridict[c8][c9][c10];
 
     c11 = stbrett[ciphertext[i+8]];
     c11 = path_lookup[i+8][c11];
     c11 = stbrett[c11];
-    s0 += tridict[c9][c10][c11];
 
     c12 = stbrett[ciphertext[i+9]];
     c12 = path_lookup[i+9][c12];
     c12 = stbrett[c12];
-    s1 += tridict[c10][c11][c12];
 
     c13 = stbrett[ciphertext[i+10]];
     c13 = path_lookup[i+10][c13];
     c13 = stbrett[c13];
-    s2 += tridict[c11][c12][c13];
 
     c14 = stbrett[ciphertext[i+11]];
     c14 = path_lookup[i+11][c14];
     c14 = stbrett[c14];
-    s3 += tridict[c12][c13][c14];
 
     c15 = stbrett[ciphertext[i+12]];
     c15 = path_lookup[i+12][c15];
     c15 = stbrett[c15];
-    s0 += tridict[c13][c14][c15];
 
     c16 = stbrett[ciphertext[i+13]];
     c16 = path_lookup[i+13][c16];
     c16 = stbrett[c16];
-    s1 += tridict[c14][c15][c16];
 
     c17 = stbrett[ciphertext[i+14]];
     c17 = path_lookup[i+14][c17];
     c17 = stbrett[c17];
-    s2 += tridict[c15][c16][c17];
 
     c18 = stbrett[ciphertext[i+15]];
     c18 = path_lookup[i+15][c18];
     c18 = stbrett[c18];
+
+    s0 += tridict[c1][c2][c3];
+    s1 += tridict[c2][c3][c4];
+    s2 += tridict[c3][c4][c5];
+    s3 += tridict[c4][c5][c6];
+    s0 += tridict[c5][c6][c7];
+    s1 += tridict[c6][c7][c8];
+    s2 += tridict[c7][c8][c9];
+    s3 += tridict[c8][c9][c10];
+    s0 += tridict[c9][c10][c11];
+    s1 += tridict[c10][c11][c12];
+    s2 += tridict[c11][c12][c13];
+    s3 += tridict[c12][c13][c14];
+    s0 += tridict[c13][c14][c15];
+    s1 += tridict[c14][c15][c16];
+    s2 += tridict[c15][c16][c17];
     s3 += tridict[c16][c17][c18];
 
     c1 = c17;
@@ -608,21 +611,22 @@ int triscore(const int *stbrett, const int *ciphertext, int len)
     c3 = stbrett[ciphertext[i]];
     c3 = path_lookup[i][c3];
     c3 = stbrett[c3];
-    s0 += tridict[c1][c2][c3];
 
     c4 = stbrett[ciphertext[i+1]];
     c4 = path_lookup[i+1][c4];
     c4 = stbrett[c4];
-    s1 += tridict[c2][c3][c4];
 
     c5 = stbrett[ciphertext[i+2]];
     c5 = path_lookup[i+2][c5];
     c5 = stbrett[c5];
-    s2 += tridict[c3][c4][c5];
 
     c6 = stbrett[ciphertext[i+3]];
     c6 = path_lookup[i+3][c6];
     c6 = stbrett[c6];
+
+    s0 += tridict[c1][c2][c3];
+    s1 += tridict[c2][c3][c4];
+    s2 += tridict[c3][c4][c5];
     s3 += tridict[c4][c5][c6];
 
     c1 = c5;
