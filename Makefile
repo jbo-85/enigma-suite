@@ -33,7 +33,7 @@ display.c display.h
 
 enigma.o: \
 enigma.c global.h charmap.h cipher.h ciphertext.h dict.h \
-display.h error.h hillclimb.h ic.h input.h key.h result.h \
+display.h error.h getopt.h hillclimb.h ic.h input.h key.h result.h \
 resume_in.h resume_out.h scan.h
 
 enigma: \
@@ -41,11 +41,14 @@ enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
 display.o error.o hillclimb.o ic.o input.o key.o result.o \
 resume_in.o resume_out.o scan_int.o score.o stecker.o
 	$(LD) $(LDFLAGS) -oenigma enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
-	display.o error.o hillclimb.o ic.o input.o key.o result.o \
+	display.o error.o getopt.o hillclimb.o ic.o input.o key.o result.o \
 	resume_in.o resume_out.o scan_int.o score.o stecker.o $(LIBS)
 
 error.o: \
 error.c error.h date.h
+
+getopt.o: \
+getopt.c getopt.h
 
 hillclimb.o: \
 hillclimb.c cipher.h dict.h error.h global.h key.h \
