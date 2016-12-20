@@ -38,7 +38,7 @@ resume_in.h resume_out.h scan.h
 
 enigma: \
 enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
-display.o error.o hillclimb.o ic.o input.o key.o result.o \
+display.o error.o getopt.o hillclimb.o ic.o input.o key.o result.o \
 resume_in.o resume_out.o scan_int.o score.o stecker.o
 	$(LD) $(LDFLAGS) -oenigma enigma.o charmap.o cipher.o ciphertext.o date.o dict.o \
 	display.o error.o getopt.o hillclimb.o ic.o input.o key.o result.o \
