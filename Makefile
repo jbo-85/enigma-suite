@@ -3,15 +3,15 @@
 VPATH = .:tools
 
 CC:=gcc
-CFLAGS:=-Wall -W -O3 -flto -c
+CFLAGS:=-Wall -W -O3 -flto
 LD:=gcc
-LDFLAGS:=-fomit-frame-pointer -s -flto
+LDFLAGS:=-fomit-frame-pointer -O3 -flto -s
 LIBS:=-lm
 
 default: enigma SGT
 
 %.o : %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) -c $< -o $@
 
 charmap.o: \
 charmap.c charmap.h
