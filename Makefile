@@ -3,9 +3,9 @@
 VPATH = .:tools
 
 CC:=gcc
-CFLAGS:=-Wall -W -O3 -c
+CFLAGS:=-Wall -W -O3 -flto -c
 LD:=gcc
-LDFLAGS:=-fomit-frame-pointer -s
+LDFLAGS:=-fomit-frame-pointer -s -flto
 LIBS:=-lm
 
 default: enigma SGT
