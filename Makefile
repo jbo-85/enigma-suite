@@ -24,9 +24,18 @@ endif
 CC:=gcc
 CFLAGS:=-Wall -W -O3 $(arch_) -flto
 LD:=gcc
-LDFLAGS:=-fomit-frame-pointer -O3 $(arch_) -flto -s
+LDFLAGS:=-O3 $(arch_) -flto
 LIBS:=-lm
 OBJ=.o
+
+ifeq ($(profile),yes)
+	CFLAGS+=-pg -g
+	LDFLAGS+=-pg -lgmon
+else
+	CFLAGS+=-fomit-frame-pointer
+	LDFLAGS+=-fomit-frame-pointer -s
+endif
+
 endif
 
 default: enigma SGT
