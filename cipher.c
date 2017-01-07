@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "global.h"
+#ifndef WINDOWS
+#include <unistd.h>
+#endif
 #include "charmap.h"
 #include "key.h"
 #include "cipher.h"
