@@ -71,7 +71,7 @@ int main(int argc, char **argv)
       case 'z': if ((max_score = scan_posint(optarg)) == -1) usage(); break;
       case 'o': if (!(outfile = open_outfile(optarg))) usage(); break;
       case 'M': if ((model = get_model(optarg)) == -1 || !first) usage();
-                if (!init_key_default(&key, model)) usage(); break;
+                if (!init_key_default(&key, model)) { usage(); break; }
       default: usage();
     }
     first = 0;

@@ -22,7 +22,7 @@ arch_:=-march=$(arch)
 endif
 
 CC:=gcc
-CFLAGS:=-Wall -W -O3 $(arch_) -flto
+CFLAGS:=-Wall -W -Wno-unused-parameter -O3 $(arch_) -flto
 LD:=gcc
 LDFLAGS:=-O3 $(arch_) -flto
 LIBS:=-lm

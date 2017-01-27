@@ -11,7 +11,9 @@ void print_state(FILE *fp, const State *state)
 {
   char stecker[27];
   int i;
+#ifndef WINDOWS
   int ofd;
+#endif
 
   const Key *from = state->from;
   const Key *to = state->to;

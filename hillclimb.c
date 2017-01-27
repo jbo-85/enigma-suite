@@ -113,16 +113,14 @@ void hillclimb( const Key *from, const Key *to, const Key *ckey_res, const Key *
   int bestscore, jbestscore, a, globalscore;
   double bestic, ic;
   int firstloop = 1;
-  struct timeval tv;
-  unsigned int seed;
-
 
 #ifndef WINDOWS
+  struct timeval tv;
+  unsigned int seed;
   gettimeofday(&tv, NULL);
   seed = (tv.tv_sec%1000)*1000000 + tv.tv_usec; 
   srandom(seed);
-#endif
-#ifdef WINDOWS
+#else
   srand(time(NULL));
   lastsave = time(NULL);
 #endif

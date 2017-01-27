@@ -30,7 +30,9 @@ void print_plaintext(FILE *fp, const int *stbrett, const int *ciphertext, int le
 {
   int i;
   int c;
+#ifndef WINDOWS
   int ofd;
+#endif
 
   for (i = 0; i < len; i++) {
     c = stbrett[ciphertext[i]];
@@ -54,7 +56,9 @@ void print_key(FILE *fp, const Key *key)
   char date[DATELEN];
   char stecker[27];
   int i;
+#ifndef WINDOWS
   int ofd;
+#endif
 
   datestring(date);
   fprintf(fp, "Date: %s\n", date);
