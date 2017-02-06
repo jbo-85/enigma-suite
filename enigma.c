@@ -54,24 +54,24 @@ int main(int argc, char **argv)
     switch (opt) {
       case 'h': help(); break;
       case 'v': version(); break;
-      case 'u': if (!set_ukw(&key, optarg, model)) usage(); keyop = 1; break;
-      case 'w': if (!set_walze(&key, optarg, model)) usage(); keyop = 1; break;
-      case 'r': if (!set_ring(&key, optarg, model)) usage(); keyop = 1; break;
-      case 'm': if (!set_mesg(&key, optarg, model)) usage(); keyop = 1; break;
-      case 's': if (!set_stecker(&key, optarg)) usage(); keyop = 1; break;
+      case 'u': if (!set_ukw(&key, optarg, model)) { usage(); } keyop = 1; break;
+      case 'w': if (!set_walze(&key, optarg, model)) { usage(); } keyop = 1; break;
+      case 'r': if (!set_ring(&key, optarg, model)) { usage(); } keyop = 1; break;
+      case 'm': if (!set_mesg(&key, optarg, model)) { usage(); } keyop = 1; break;
+      case 's': if (!set_stecker(&key, optarg)) { usage(); } keyop = 1; break;
       case 'c': hc = 1; break;
       case 'i': ic = 1; break;
       case 'f': f = optarg; break;
       case 't': t = optarg; break;
       case 'k': k = optarg; break;
-      case 'x': if (sw_mode != SW_ONSTART) usage(); sw_mode = SW_OTHER; break;
-      case 'a': if (sw_mode != SW_ONSTART) usage(); sw_mode = SW_ALL; break;
+      case 'x': if (sw_mode != SW_ONSTART) { usage(); } sw_mode = SW_OTHER; break;
+      case 'a': if (sw_mode != SW_ONSTART) { usage(); } sw_mode = SW_ALL; break;
       case 'R': resume = 1; hc = 1; break;
-      case 'n': if ((max_pass = scan_posint(optarg)) == -1) usage(); break;
-      case 'z': if ((max_score = scan_posint(optarg)) == -1) usage(); break;
-      case 'o': if (!(outfile = open_outfile(optarg))) usage(); break;
-      case 'M': if ((model = get_model(optarg)) == -1 || !first) usage();
-                if (!init_key_default(&key, model)) { usage(); break; }
+      case 'n': if ((max_pass = scan_posint(optarg)) == -1) { usage(); } break;
+      case 'z': if ((max_score = scan_posint(optarg)) == -1) { usage(); } break;
+      case 'o': if (!(outfile = open_outfile(optarg))) { usage(); } break;
+      case 'M': if ((model = get_model(optarg)) == -1 || !first) { usage(); }
+                if (!init_key_default(&key, model)) { usage(); } break;
       default: usage();
     }
     first = 0;
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   }
 
 
-  if (argc-optind != 3) usage();
+  if (argc-optind != 3) { usage(); }
   load_tridict(argv[optind++]);
   load_bidict(argv[optind++]);
   ciphertext = load_ciphertext(argv[optind], &len, resume);
@@ -92,14 +92,14 @@ int main(int argc, char **argv)
 
 
   if (ic == 1) {
-    if (keyop == 1) usage();
-    if (resume == 1) usage();
-    if (k != NULL) usage();
+    if (keyop == 1) { usage(); }
+    if (resume == 1) { usage(); }
+    if (k != NULL) { usage(); }
     if (f == NULL && t == NULL) {
       f = fmin[model];
       t = tmax[model];
 
-      if (!set_range(&from, &to, f, t, model)) usage();
+      if (!set_range(&from, &to, f, t, model)) { usage(); }
 
       /* no range given, first try fast noring option */
       ic_noring(&from, &to, NULL, NULL, SINGLE_KEY, 300, 1, max_score, resume, outfile, 0, ciphertext, len);
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
       if (f == NULL) f = fmin[model];
       if (t == NULL) t = tmax[model];
 
-      if (!set_range(&from, &to, f, t, model)) usage();
+      if (!set_range(&from, &to, f, t, model)) { usage(); }
 
       /* 300 passes hard wired */
       ic_allring(&from, &to, NULL, NULL, SINGLE_KEY, 300, 1, max_score, resume, outfile, 0, ciphertext, len);
@@ -117,24 +117,24 @@ int main(int argc, char **argv)
   }
 
   if (hc == 1) {
-    if (keyop == 1) usage();
+    if (keyop == 1) { usage(); }
     if (!resume) {
       if (k != NULL) {
-        if (f != NULL || t != NULL) usage();
-        if (!set_key(&from, k, model, 1)) usage();
+        if (f != NULL || t != NULL) { usage(); }
+        if (!set_key(&from, k, model, 1)) { usage(); }
         to = from;
         sw_mode = SINGLE_KEY;
       }
       else {
         if (f == NULL) f = fmin[model];
         if (t == NULL) t = tmax[model];
-        if (!set_range(&from, &to, f, t, model)) usage();
+        if (!set_range(&from, &to, f, t, model)) { usage(); }
       }
     }
     else {
       /* only -o option is allowed in addition to -R */
       maxargs = (outfile == stdout) ? 5 : 7;
-      if (argc != maxargs) usage();
+      if (argc != maxargs) { usage(); }
       if (!set_state(&from, &to, &ckey_res, &gkey_res, &sw_mode, &max_pass, &firstpass, &max_score)) {
         fputs("enigma: error: resume file is not in the right format\n", stderr);
         exit(EXIT_FAILURE);
